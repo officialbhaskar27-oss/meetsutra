@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeetSutra — Meetings ka Naya Andaaz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: rgba(255,255,255,0.07);
+    --accent: #ff6b35;
+    --accent2: #ffb347;
+    --text: #f0ede8;
+    --muted: #7a7a8a;
+    --green: #3ddc84;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.4;
+  }
+
+  /* Glow blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,107,53,0.12), transparent 70%);
+    top: -150px; right: -100px;
+  }
+  .blob-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(61,220,132,0.07), transparent 70%);
+    bottom: 100px; left: -100px;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 50;
+    padding: 20px 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(20px);
+    background: rgba(10,10,15,0.7);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-badge {
+    background: rgba(255,107,53,0.12);
+    border: 1px solid rgba(255,107,53,0.3);
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .nav-cta {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover { background: #ff7f4f; transform: translateY(-1px); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 5% 80px;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(61,220,132,0.08);
+    border: 1px solid rgba(61,220,132,0.2);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    color: var(--green);
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  h1 .orange { color: var(--accent); }
+  h1 .dim { color: var(--muted); }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .hero-sub strong { color: var(--text); font-weight: 500; }
+
+  /* WAITLIST FORM */
+  .waitlist-form {
+    display: flex;
+    gap: 10px;
+    max-width: 480px;
+    width: 100%;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  .waitlist-form input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .waitlist-form input::placeholder { color: var(--muted); }
+  .waitlist-form input:focus { border-color: rgba(255,107,53,0.5); }
+
+  .waitlist-form button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .waitlist-form button:hover {
+    background: #ff7f4f;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+  }
+
+  .form-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 14px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .success-msg {
+    display: none;
+    background: rgba(61,220,132,0.1);
+    border: 1px solid rgba(61,220,132,0.3);
+    color: var(--green);
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  /* SOCIAL PROOF */
+  .social-proof {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 48px;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+  .avatars {
+    display: flex;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    margin-left: -8px;
+    font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    color: #fff;
+  }
+  .avatar:first-child { margin-left: 0; }
+  .av1 { background: #e74c3c; }
+  .av2 { background: #3498db; }
+  .av3 { background: #9b59b6; }
+  .av4 { background: #f39c12; }
+  .av5 { background: #1abc9c; }
+
+  .proof-text { font-size: 0.85rem; color: var(--muted); }
+  .proof-text strong { color: var(--text); }
+
+  /* DEMO MOCKUP */
+  .mockup-section {
+    position: relative;
+    z-index: 1;
+    padding: 0 5% 100px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .mockup {
+    width: 100%;
+    max-width: 800px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+
+  .mockup-bar {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .mockup-title {
+    margin-left: 8px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .mockup-body {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .mockup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .mockup-card-title {
+    font-size: 0.7rem;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+  }
+  .mockup-line {
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .mockup-line.w100 { width: 100%; }
+  .mockup-line.w80 { width: 80%; }
+  .mockup-line.w60 { width: 60%; }
+  .mockup-line.w90 { width: 90%; }
+
+  .mockup-transcript {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .transcript-line {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .speaker-tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 2px;
+    font-family: 'Syne', sans-serif;
+  }
+  .st-a { background: rgba(255,107,53,0.15); color: var(--accent); }
+  .st-b { background: rgba(61,220,132,0.1); color: var(--green); }
+  .st-c { background: rgba(100,150,255,0.1); color: #8ab4ff; }
+  .transcript-text {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .transcript-text em { color: var(--text); font-style: normal; }
+
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .action-item:last-child { border: none; padding-bottom: 0; }
+  .check { color: var(--green); font-size: 1rem; }
+  .action-text { color: var(--text); }
+  .action-who {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* HOW IT WORKS */
+  .section {
+    position: relative; z-index: 1;
+    padding: 80px 5%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    letter-spacing: -1px;
+    margin-bottom: 60px;
+    line-height: 1.2;
+  }
+  .section-title .muted { color: var(--muted); }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+  }
+
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .step:hover {
+    border-color: rgba(255,107,53,0.3);
+    transform: translateY(-4px);
+  }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: rgba(255,107,53,0.15);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .step-icon {
+    font-size: 1.8rem;
+    margin-bottom: 14px;
+  }
+
+  .step h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+  .step p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* FEATURES */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .feat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feat:hover::before { opacity: 1; }
+  .feat:hover { border-color: rgba(255,107,53,0.2); transform: translateY(-3px); }
+
+  .feat-icon { font-size: 1.6rem; margin-bottom: 14px; }
+  .feat h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  .feat p { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+  .feat .tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,107,53,0.1);
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  /* PRICING */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    max-width: 800px;
+  }
+
+  .price-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .price-card.featured {
+    border-color: rgba(255,107,53,0.4);
+    background: linear-gradient(135deg, rgba(255,107,53,0.05), var(--card));
+  }
+  .popular-badge {
+    position: absolute;
+    top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .price-plan {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .price-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .price-period { font-size: 0.8rem; color: var(--muted); margin-bottom: 24px; }
+
+  .price-features { list-style: none; margin-bottom: 28px; }
+  .price-features li {
+    font-size: 0.83rem;
+    color: var(--muted);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .price-features li::before { content: '✓'; color: var(--green); font-size: 0.8rem; }
+  .price-features li:last-child { border: none; }
+
+  .price-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .price-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .price-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+  /* CTA BOTTOM */
+  .cta-bottom {
+    position: relative; z-index: 1;
+    margin: 0 5% 80px;
+    background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,179,71,0.05));
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 20px;
+    padding: 60px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cta-bottom::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(255,107,53,0.05), transparent 60%);
+    pointer-events: none;
+  }
+
+  .cta-bottom h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .cta-bottom p { color: var(--muted); margin-bottom: 36px; font-size: 1rem; }
+
+  /* FOOTER */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 30px 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  footer .logo { font-size: 1.1rem; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--text); }
+  .footer-right { font-size: 0.75rem; color: var(--muted); }
+
+  /* DIVIDER */
+  .divider {
+    position: relative; z-index: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 5%;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .waitlist-form { flex-direction: column; }
+    .mockup-body { grid-template-columns: 1fr; }
+    .cta-bottom { padding: 40px 24px; }
+    .social-proof { flex-direction: column; gap: 8px; }
+    nav .nav-badge { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Meet<span>Sutra</span></div>
+  <div class="nav-badge">🇮🇳 INDIA FIRST</div>
+  <button class="nav-cta" onclick="document.querySelector('.hero').scrollIntoView({behavior:'smooth'})">Early Access</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Now in Early Access — Limited Seats</div>
+
+  <h1>
+    Meetings hoti hain.<br>
+    <span class="dim">Notes likhne ki</span><br>
+    <span class="orange">zaroorat nahi.</span>
+  </h1>
+
+  <p class="hero-sub">
+    MeetSutra automatically records, transcribes, and summarizes your meetings in <strong>Hindi, Hinglish, or English</strong> — and sends the summary straight to your <strong>WhatsApp</strong>.
+  </p>
+
+  <div class="waitlist-form" id="form">
+    <input type="email" id="emailInput" placeholder="aapka@email.com" />
+    <button onclick="handleSignup()">Join Waitlist →</button>
+  </div>
+  <div class="success-msg" id="successMsg">
+    ✅ Done! Jaldi milenge. Aapko WhatsApp pe confirm karenge.
+  </div>
+  <p class="form-note">Free early access · No credit card · Cancel anytime</p>
+
+  <div class="social-proof">
+    <div class="avatars">
+      <div class="avatar av1">R</div>
+      <div class="avatar av2">S</div>
+      <div class="avatar av3">P</div>
+      <div class="avatar av4">A</div>
+      <div class="avatar av5">K</div>
+    </div>
+    <div class="proof-text"><strong>340+ founders & sales teams</strong> already on waitlist</div>
+  </div>
+</section>
+
+<!-- MOCKUP -->
+<div class="mockup-section">
+  <div class="mockup">
+    <div class="mockup-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="mockup-title">MeetSutra — Sales Call · 32 min · Hindi+English</span>
+    </div>
+    <div class="mockup-body">
+      <div class="mockup-transcript">
+        <div class="mockup-card-title">📝 Live Transcript</div>
+        <div class="transcript-line">
+          <span class="speaker-tag st-a">Rahul</span>
+          <span class="transcript-text"><em>Toh pricing ke baare mein baat karte hain</em> — Q3 mein budget tight hai hamare paas.</span>
+        </div>
+        <div class="transcript-line">
+          <span class="speaker-tag st-b">Priya</span>
+          <span class="transcript-text"><em>Bilkul samajh sakti hoon</em> — we can offer a 20% discount if you commit by month-end.</span>
+        </div>
+        <div class="transcript-line">
+          <span class="speaker-tag st-c">Arjun</span>
+          <span class="transcript-text">Let me check with our <em>finance team. Kal tak confirm</em> kar deta hoon.</span>
+        </div>
+      </div>
+
+      <div class="mockup-card">
+        <div class="mockup-card-title">⚡ AI Summary</div>
+        <div class="mockup-line w100"></div>
+        <div class="mockup-line w90"></div>
+        <div class="mockup-line w80"></div>
+        <div class="mockup-line w60"></div>
+        <div class="mockup-line w90"></div>
+        <div class="mockup-line w70"></div>
+      </div>
+
+      <div class="mockup-card">
+        <div class="mockup-card-title">✅ Action Items</div>
+        <div class="action-item">
+          <span class="check">✓</span>
+          <span class="action-text">Finance se budget confirm karo</span>
+          <span class="action-who">Arjun</span>
+        </div>
+        <div class="action-item">
+          <span class="check">✓</span>
+          <span class="action-text">20% discount proposal send karo</span>
+          <span class="action-who">Priya</span>
+        </div>
+        <div class="action-item">
+          <span class="check">✓</span>
+          <span class="action-text">Follow-up call — Friday 3PM</span>
+          <span class="action-who">Rahul</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- HOW IT WORKS -->
+<div class="section">
+  <div class="section-label">How It Works</div>
+  <div class="section-title">Teen steps. <span class="muted">Bas.</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔗</div>
+      <h3>Connect karo</h3>
+      <p>Apna Google Meet, Zoom, ya Teams account connect karo. MeetSutra automatically join karega.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">🎙️</div>
+      <h3>Meeting karo</h3>
+      <p>Bas normally meeting karo. Hindi bolte raho, English bolte raho — MeetSutra sab samjhega.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">📱</div>
+      <h3>WhatsApp pe paao</h3>
+      <p>Meeting khatam hote hi summary, action items, aur transcript seedha WhatsApp pe.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- FEATURES -->
+<div class="section">
+  <div class="section-label">Features</div>
+  <div class="section-title">Banaya hai <span class="muted">India ke liye.</span></div>
+
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">🇮🇳</div>
+      <h3>Hinglish Support</h3>
+      <p>Aadhi Hindi, aadhi English — koi problem nahi. Dono languages seamlessly transcribe hoti hain.</p>
+      <span class="tag">INDIA EXCLUSIVE</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">💬</div>
+      <h3>WhatsApp Delivery</h3>
+      <p>Email nahi, WhatsApp. Kyunki India mein yahi hota hai. Summary turant phone pe.</p>
+      <span class="tag">INDIA EXCLUSIVE</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔌</div>
+      <h3>Zoho & CRM Sync</h3>
+      <p>Zoho CRM, Salesforce, LeadSquared — meeting notes automatically update honge.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔒</div>
+      <h3>Data India Mein</h3>
+      <p>Aapki meetings India ke servers pe store hoti hain. DPDP Act compliant. Koi leak nahi.</p>
+      <span class="tag">DPDP COMPLIANT</span>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🧾</div>
+      <h3>GST Invoice</h3>
+      <p>Proper GST invoice milega. Finance team ko khush rakhna easy ho jayega.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🌐</div>
+      <h3>Regional Languages</h3>
+      <p>Hindi ke alawa Tamil, Telugu, Marathi bhi coming soon. Poora India cover hoga.</p>
+      <span class="tag">COMING SOON</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PRICING -->
+<div class="section">
+  <div class="section-label">Pricing</div>
+  <div class="section-title">Indian budget. <span class="muted">Global features.</span></div>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-plan">Solo</div>
+      <div class="price-amount">₹299</div>
+      <div class="price-period">per month</div>
+      <ul class="price-features">
+        <li>20 meetings/month</li>
+        <li>Hindi + English</li>
+        <li>WhatsApp summary</li>
+        <li>Basic action items</li>
+      </ul>
+      <button class="price-btn" onclick="handleSignup()">Join Waitlist</button>
+    </div>
+    <div class="price-card featured">
+      <div class="popular-badge">⚡ MOST POPULAR</div>
+      <div class="price-plan">Team</div>
+      <div class="price-amount">₹999</div>
+      <div class="price-period">per month · 5 seats</div>
+      <ul class="price-features">
+        <li>Unlimited meetings</li>
+        <li>All languages</li>
+        <li>WhatsApp + Email</li>
+        <li>CRM integration</li>
+        <li>GST invoice</li>
+      </ul>
+      <button class="price-btn primary" onclick="handleSignup()">Get Early Access</button>
+    </div>
+  </div>
+</div>
+
+<!-- CTA BOTTOM -->
+<div class="cta-bottom">
+  <h2>Ab meeting ke baad<br>notes banana band karo.</h2>
+  <p>Early access members ko pehle 3 months 50% off milega.</p>
+  <div class="waitlist-form" style="margin: 0 auto; justify-content: center;">
+    <input type="email" id="emailInput2" placeholder="aapka@email.com" />
+    <button onclick="handleSignup2()">Abhi Join Karo →</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">Meet<span>Sutra</span></div>
+  <div class="footer-links">
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-right">Made with ❤️ in India · © 2025 MeetSutra</div>
+</footer>
+
+<script>
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd4HV-x7__Fftrj92rQ6MqNd2Sk8AngDphseKNFX2JrOk27aw/viewform?usp=dialog';
+
+function handleSignup() {
+  const email = document.getElementById('emailInput').value;
+  if (!email || !email.includes('@')) {
+    document.getElementById('emailInput').style.borderColor = 'rgba(255,100,100,0.5)';
+    document.getElementById('emailInput').placeholder = 'Valid email daalein...';
+    return;
+  }
+  window.open(FORM_URL, '_blank');
+  document.getElementById('form').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+  document.querySelector('.form-note').style.display = 'none';
+}
+
+function handleSignup2() {
+  const email = document.getElementById('emailInput2').value;
+  if (!email || !email.includes('@')) {
+    document.getElementById('emailInput2').style.borderColor = 'rgba(255,100,100,0.5)';
+    return;
+  }
+  window.open(FORM_URL, '_blank');
+  const btn = document.querySelector('.cta-bottom button');
+  btn.textContent = '✅ Done! Jaldi milenge.';
+  btn.style.background = '#3ddc84';
+  document.getElementById('emailInput2').disabled = true;
+}
+
+// Smooth scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.step, .feat, .price-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
